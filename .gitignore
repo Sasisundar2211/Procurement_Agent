@@ -1,0 +1,9 @@
+.env
+data/procure.db
+data/*.parquet
+__pycache__/
+.venv/
+*.pyc
+*.log
+secrets/
+.env.local
