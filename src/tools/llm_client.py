@@ -21,7 +21,7 @@ def summarize_drift_with_gemini(contract_price, po_price):
         
     try:
         genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        model = genai.GenerativeModel('models/gemini-1.5-flash')
         prompt = f"Here is a price mismatch: Contract ${contract_price}, PO ${po_price}. Write a one-sentence summary for the dashboard."
         response = model.generate_content(prompt)
         return response.text
