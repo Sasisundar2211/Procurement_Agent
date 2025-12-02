@@ -7,12 +7,11 @@ if SUB.exists():
     shutil.rmtree(SUB)
 SUB.mkdir()
 
-# Copy Source Code
+
 shutil.copytree(ROOT/"src", SUB/"src")
 shutil.copytree(ROOT/"frontend", SUB/"frontend", ignore=shutil.ignore_patterns("node_modules", ".git"))
 
-# Copy Data (Public Only)
-# We need to ensure the data directory exists
+
 (SUB/"data").mkdir(exist_ok=True)
 if (ROOT/"data"/"public").exists():
     shutil.copytree(ROOT/"data"/"public", SUB/"data"/"public")
