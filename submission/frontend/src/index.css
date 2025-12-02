@@ -1,0 +1,57 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 255 255 255;
+    --foreground: 17 24 39;
+    
+    --sidebar-bg: 249 250 251;
+    --border-soft: 229 231 235;
+    
+    --text-primary: 17 24 39;
+    --text-secondary: 55 65 81;
+    --text-tertiary: 107 114 128;
+    --text-quaternary: 156 163 175;
+    
+    --accent: 79 70 229;
+    --accent-hover: 67 56 202;
+    --accent-light: 238 242 255;
+    
+    --drift-high: 239 68 68;
+    --drift-medium: 249 115 22;
+    --drift-low: 234 179 8;
+  }
+
+  .dark {
+    --background: 3 7 18; /* gray-950 */
+    --foreground: 243 244 246; /* gray-100 */
+    
+    --sidebar-bg: 2 6 23; /* gray-950/darker */
+    --border-soft: 31 41 55; /* gray-800 */
+    
+    --text-primary: 243 244 246;
+    --text-secondary: 209 213 219;
+    --text-tertiary: 156 163 175;
+    --text-quaternary: 107 114 128;
+    
+    --accent: 99 102 241; /* indigo-500 */
+    --accent-hover: 79 70 229; /* indigo-600 */
+    --accent-light: 49 46 129; /* indigo-900 */
+  }
+
+  @keyframes fade-in {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .animate-fade-in {
+    animation: fade-in 0.5s ease-out forwards;
+  }
+  /* Soft focus state for accessibility */
+  button:focus-visible, input:focus-visible, [role="button"]:focus-visible, a:focus-visible {
+    outline: 2px solid #4f46e5; /* accent color */
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+}
