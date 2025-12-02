@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 from src.agents.price_detector import engine
 import uuid
+import os
 
 def ingest_sf_data():
     print("Reading SF Procurement Data...")
@@ -10,13 +11,18 @@ def ingest_sf_data():
         'Purchase Order Date', 'Purchase Order', 'Contract Number', 'Contract Title',
         'Supplier & Other Non-Supplier Payees', 'Encumbered Quantity', 'Encumbered Amount'
     ]
+    
+    # Construct path to data file relative to the script location
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    data_path = os.path.join(script_dir, 'data', 'sf_data', 'sf_procurement.csv')
+
     # Note: Column names might vary slightly, I'll try to be robust or read all and rename
     try:
-        df = pd.read_csv('data/sf_data/sf_procurement.csv', usecols=use_cols)
+        df = pd.read_csv(data_path, usecols=use_cols)
     except ValueError:
         # Fallback if columns are named differently (e.g. from the truncated output I saw)
         # Let's read all and print columns if this fails, but for now assume standard names
-        df = pd.read_csv('data/sf_data/sf_procurement.csv')
+        df = pd.read_csv(data_path)
     
     print(f"Loaded {len(df)} rows.")
 

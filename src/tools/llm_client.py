@@ -26,9 +26,10 @@ def summarize_drift_with_gemini(contract_price, po_price):
         response = model.generate_content(prompt)
         return response.text
     except Exception as e:
-        import traceback
-        traceback.print_exc()
-        return f"Error generating summary: {str(e)}"
+        print(f"Gemini API Error: {e}")
+        # Fallback for demo purposes if API key is invalid/restricted
+        drift_pct = ((po_price - contract_price) / contract_price) * 100
+        return f"⚠️ High Drift Detected: PO price is {drift_pct:.1f}% higher than contract. (AI Summary Unavailable)"
 
 def draft_message(prompt):
     provider = get_llm_provider()
