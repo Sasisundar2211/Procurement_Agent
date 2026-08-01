@@ -46,7 +46,6 @@ interface DashboardStats {
 interface SortConfig {
   key: keyof DetectionResult;
   direction: 'asc' | 'desc';
-  gemini_summary: string;
 }
 
 export default function Dashboard() {
