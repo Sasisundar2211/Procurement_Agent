@@ -32,7 +32,10 @@ def get_settings() -> Settings:
         app_name=os.getenv("APP_NAME", "Procurement Agent API"),
         app_version=os.getenv("APP_VERSION", "1.0.0"),
         api_prefix=os.getenv("API_PREFIX", "/api"),
-        database_url=os.getenv("DATABASE_URL", "sqlite:///data/procure.db"),
+        database_url=os.getenv(
+            "DATABASE_URL",
+            "sqlite:////tmp/procure.db" if os.getenv("VERCEL") else "sqlite:///data/procure.db",
+        ),
         default_drift_threshold_percent=float(os.getenv("DEFAULT_DRIFT_THRESHOLD_PERCENT", "5")),
         max_ai_summaries=int(os.getenv("MAX_AI_SUMMARIES", "5")),
         cors_origins=cors_origins or ["*"],
