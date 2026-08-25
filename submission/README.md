@@ -1,70 +1,113 @@
-# Procurement Price-Drift Enforcement Agent
+# Procurement Agent API (FastAPI)
 
-A tool to detect and enforce price-drift in procurement data.
+Production-oriented procurement drift detection service built with FastAPI.
 
-## How to run locally
+## Architecture
 
-1.  Generate data:
+The backend now follows a modular structure:
 
-    ```bash
-    python data_generator.py
-    ```
+- `src/api/`: FastAPI app, routers, and route handlers
+- `src/services/`: business logic (detection, simulation, ingestion, task orchestration)
+- `src/models/`: Pydantic API contracts and task store primitives
+- `src/utils/`: settings, database engine, logging, serialization helpers
 
-    This generates data in `data/private` and `data/public`.
+Legacy paths (`src/api/fastapi_app.py`, `src/agents/*`) are kept as compatibility wrappers.
 
-2.  Ingest public data:
+## Quickstart
 
-    ```bash
-    python -c "from src.agents.ingestor import run; run()"
-    ```
-
-3.  Start the API:
-
-    ```bash
-    uvicorn src.api.fastapi_app:app --reload --port 8000
-    ```
-
-4.  Run detection via API:
-    curl -X POST http://localhost:8000/api/run-detection
-
-    ```
-
-    ```
-
-## Interactive Demo
-
-The web interface includes a built-in **Demo Guide**.
-
-1.  Open the dashboard at `http://localhost:5173`.
-2.  Click the **Help / Demo** icon (?) in the top header.
-3.  Follow the on-screen instructions to:
-    - **Run Detection**: Scan for price drifts.
-    - **Simulate Traffic**: Generate synthetic data with leaks.
-    - **Filter Results**: Use the slider and badges to analyze severity.
-    - **Export Reports**: Download PDF/CSV summaries.
-
-## LLM Usage
-
-This project can use a Large Language Model (LLM) for certain tasks. The `LLM_PROVIDER` environment variable controls which provider to use.
-
-- `LLM_PROVIDER=local`: (Default) Uses a simple, deterministic local fallback that does not make network requests.
-- `LLM_PROVIDER=openai`: Uses the OpenAI API. Requires an `LLM_API_KEY`.
-
-## Compliance
-
-- For compliance details, see `compliance.md`.
-- For third-party licenses, see `THIRD_PARTY_NOTICES.md`.
-- A template for submission is in `submission_compliance.txt`.
-
-## How to create submission artifact
-
-To create a submission artifact that excludes private data, run the following command:
+1. Create a virtual environment and install dependencies:
 
 ```bash
-python scripts/make_submission_artifact.py
+python3.11 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
 ```
 
-## Team Eligibility
+2. Configure environment variables:
 
-- **Team Members:** BOBBILI SOMANADH VASUDEVARA SASI SUNDAR (AI Engineer | Machine Learning Engineer)
-- Please confirm that all team members meet the competition's residency and export control rules.
+```bash
+cp .env.example .env
+```
+
+3. Generate and ingest demo data:
+
+```bash
+python data_generator.py
+python -c "from src.agents.ingestor import run; run()"
+```
+
+4. Start the API:
+
+```bash
+uvicorn src.api.main:app --reload --port 8000
+```
+
+5. (Optional) Start the frontend:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+## API Endpoints
+
+- `GET /api/health`: health/version check
+- `GET /api/leaks`: current drift detections
+- `POST /api/run-detection`: start async detection task
+- `GET /api/run-detection/{task_id}`: poll task status
+- `POST /api/simulate-traffic`: append synthetic traffic for demos
+- `POST /api/vendors/rank`: upload CSV and return weighted vendor ranking
+- `POST /api/vendors/explain-ranking`: upload ranked CSV and get short OpenAI business summary
+
+## Vendor Ranking (CSV -> Ranked Vendors)
+
+Use weighted scoring to rank vendors from a CSV file.
+
+CLI usage:
+
+```bash
+python scripts/rank_vendors.py input.csv -o ranked_vendors.csv --weights "unit_price:-0.5,on_time_rate:0.3,quality_score:0.2"
+```
+
+Notes:
+
+- `vendor_id` is used by default as the vendor key (`--vendor-column` to change).
+- Positive weight means higher metric is better.
+- Negative weight means lower metric is better (for example cost/price/risk metrics).
+
+## Vendor Ranking Explanation (OpenAI)
+
+Generate a short, business-focused summary from ranked vendor results:
+
+```bash
+python scripts/explain_vendor_ranking.py ranked_vendors.csv --top-n 3
+```
+
+Required environment variable:
+
+- `OPENAI_API_KEY`
+
+## Streamlit App
+
+Run an interactive app to upload CSV, rank vendors, and generate a short explanation:
+
+```bash
+streamlit run streamlit_app.py
+```
+
+In the app:
+
+- Upload vendor metrics CSV
+- Set optional weights and vendor column
+- View ranked vendors and download ranked output CSV
+- Generate a short business-focused explanation with OpenAI
+
+## Docker
+
+```bash
+docker build -t procurement-agent .
+docker run -p 8000:8000 procurement-agent
+```
+
+The API is exposed at `http://localhost:8000`.
