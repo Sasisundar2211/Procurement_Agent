@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+/* eslint-disable react-hooks/set-state-in-effect */
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   LayoutDashboard, 
   Search, 
@@ -86,7 +87,7 @@ export default function Dashboard() {
     });
   };
 
-  const fetchResults = async (drift_threshold: number | null = null) => {
+  const fetchResults = useCallback(async (drift_threshold: number | null = null) => {
     try {
       let url = '/api/leaks';
       if (drift_threshold !== null) {
@@ -101,17 +102,37 @@ export default function Dashboard() {
     } catch (error) {
       console.error("Failed to fetch results", error);
     }
-  };
+  }, []);
 
-  // Mock initial fetch or real fetch
+  // Initial fetch
   useEffect(() => {
     fetchResults();
-  }, []);
+  }, [fetchResults]);
 
   const handleApplyFilters = () => {
     fetchResults(driftScoreRange[0]);
     setShowFilters(false);
   };
+
+  const pollStatus = useCallback(async (taskId: string) => {
+    const interval = setInterval(async () => {
+      try {
+        const response = await fetch(`/api/run-detection/${taskId}`);
+        const data = await response.json();
+        if (data.status === 'completed') {
+          clearInterval(interval);
+          fetchResults(); // Refresh data
+          setIsDetecting(false);
+        } else if (data.status === 'failed') {
+          clearInterval(interval);
+          setIsDetecting(false);
+        }
+      } catch {
+        clearInterval(interval);
+        setIsDetecting(false);
+      }
+    }, 1000);
+  }, [fetchResults]);
 
   const runDetection = async () => {
     setIsDetecting(true);
@@ -146,26 +167,6 @@ export default function Dashboard() {
       console.error("Failed to simulate traffic", error);
       setIsSimulating(false);
     }
-  };
-
-  const pollStatus = async (taskId: string) => {
-    const interval = setInterval(async () => {
-      try {
-        const response = await fetch(`/api/run-detection/${taskId}`);
-        const data = await response.json();
-        if (data.status === 'completed') {
-          clearInterval(interval);
-          fetchResults(); // Refresh data
-          setIsDetecting(false);
-        } else if (data.status === 'failed') {
-          clearInterval(interval);
-          setIsDetecting(false);
-        }
-      } catch (e) {
-        clearInterval(interval);
-        setIsDetecting(false);
-      }
-    }, 1000);
   };
 
   const handleSort = (key: keyof DetectionResult) => {
@@ -247,8 +248,8 @@ export default function Dashboard() {
 
     if (sortConfig !== null) {
       sortableItems.sort((a, b) => {
-        const aValue = a[sortConfig.key] as any;
-        const bValue = b[sortConfig.key] as any;
+        const aValue = a[sortConfig.key];
+        const bValue = b[sortConfig.key];
         
         if (aValue === undefined || bValue === undefined) return 0;
 
@@ -370,7 +371,6 @@ export default function Dashboard() {
         )}
 
         {/* Filters & Actions */}
-        {/* Filters & Actions */}
         <div className="bg-background rounded-card border border-border-soft mb-6">
           <div className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border-soft">
             <div className="relative max-w-md w-full">
@@ -432,7 +432,7 @@ export default function Dashboard() {
                         defaultValue={[0, 100]}
                         ariaLabel={['Lower thumb', 'Upper thumb']}
                         ariaValuetext={state => `Thumb value ${state.valueNow}`}
-                        renderThumb={(props: any, state: any) => <div {...props}><div className="text-xs text-white absolute -top-5 left-1/2 -translate-x-1/2">{state.valueNow}</div></div>}
+                        renderThumb={(props, state) => <div {...props} key={props.key}><div className="text-xs text-white absolute -top-5 left-1/2 -translate-x-1/2">{state.valueNow}</div></div>}
                         pearling
                         minDistance={10}
                         onChange={(value) => setDriftScoreRange(value as [number, number])}

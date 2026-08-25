@@ -1,21 +1,26 @@
-# Procurement Agent API (FastAPI)
+# Procurement Agent API (FastAPI) & Frontend
 
-Production-oriented procurement drift detection service built with FastAPI.
+Production-oriented procurement drift detection service built with FastAPI and React.
+
+> **Note:** Design notes, prompt libraries, and submission writeups live in `docs/internal/` for anyone curious about the build process.
 
 ## Architecture
 
-The backend now follows a modular structure:
+The project is structured into a dedicated frontend and backend split:
 
+- `frontend/`: Vite + React UI (configured for Vercel deployment)
 - `src/api/`: FastAPI app, routers, and route handlers
-- `src/services/`: business logic (detection, simulation, ingestion, task orchestration)
+- `src/services/`: Business logic (detection, simulation, ingestion, task orchestration, vendor ranking)
 - `src/models/`: Pydantic API contracts and task store primitives
-- `src/utils/`: settings, database engine, logging, serialization helpers
-
-Legacy paths (`src/api/fastapi_app.py`, `src/agents/*`) are kept as compatibility wrappers.
+- `src/utils/`: Settings, database engine, logging, serialization helpers
+- `scripts/`: Production & development utility scripts (`scripts/data/`, `scripts/dev/`)
+- `docs/internal/`: Internal planning, compliance, and prompt documentation
 
 ## Quickstart
 
-1. Create a virtual environment and install dependencies:
+### 1. Backend Setup
+
+Create a virtual environment and install dependencies:
 
 ```bash
 python3.11 -m venv .venv
@@ -23,26 +28,26 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-2. Configure environment variables:
+Configure environment variables:
 
 ```bash
 cp .env.example .env
 ```
 
-3. Generate and ingest demo data:
+Generate and ingest demo data:
 
 ```bash
-python data_generator.py
+python scripts/data/data_generator.py
 python -c "from src.agents.ingestor import run; run()"
 ```
 
-4. Start the API:
+Start the API backend:
 
 ```bash
 uvicorn src.api.main:app --reload --port 8000
 ```
 
-5. (Optional) Start the frontend:
+### 2. Frontend Setup
 
 ```bash
 cd frontend
@@ -52,13 +57,13 @@ npm run dev
 
 ## API Endpoints
 
-- `GET /api/health`: health/version check
-- `GET /api/leaks`: current drift detections
-- `POST /api/run-detection`: start async detection task
-- `GET /api/run-detection/{task_id}`: poll task status
-- `POST /api/simulate-traffic`: append synthetic traffic for demos
-- `POST /api/vendors/rank`: upload CSV and return weighted vendor ranking
-- `POST /api/vendors/explain-ranking`: upload ranked CSV and get short OpenAI business summary
+- `GET /api/health`: Health/version check
+- `GET /api/leaks`: Current drift detections
+- `POST /api/run-detection`: Start async detection task
+- `GET /api/run-detection/{task_id}`: Poll task status
+- `POST /api/simulate-traffic`: Append synthetic traffic for demos
+- `POST /api/vendors/rank`: Upload CSV and return weighted vendor ranking
+- `POST /api/vendors/explain-ranking`: Upload ranked CSV and get AI business summary
 
 ## Vendor Ranking (CSV -> Ranked Vendors)
 
@@ -70,13 +75,7 @@ CLI usage:
 python scripts/rank_vendors.py input.csv -o ranked_vendors.csv --weights "unit_price:-0.5,on_time_rate:0.3,quality_score:0.2"
 ```
 
-Notes:
-
-- `vendor_id` is used by default as the vendor key (`--vendor-column` to change).
-- Positive weight means higher metric is better.
-- Negative weight means lower metric is better (for example cost/price/risk metrics).
-
-## Vendor Ranking Explanation (OpenAI)
+## Vendor Ranking Explanation (OpenAI/LLM)
 
 Generate a short, business-focused summary from ranked vendor results:
 
@@ -84,30 +83,11 @@ Generate a short, business-focused summary from ranked vendor results:
 python scripts/explain_vendor_ranking.py ranked_vendors.csv --top-n 3
 ```
 
-Required environment variable:
+## Legacy Prototype UI
 
-- `OPENAI_API_KEY`
+The legacy Streamlit prototype is archived under `archive/streamlit_prototype/streamlit_app.py`.
 
-## Streamlit App
+## Deployment
 
-Run an interactive app to upload CSV, rank vendors, and generate a short explanation:
-
-```bash
-streamlit run streamlit_app.py
-```
-
-In the app:
-
-- Upload vendor metrics CSV
-- Set optional weights and vendor column
-- View ranked vendors and download ranked output CSV
-- Generate a short business-focused explanation with OpenAI
-
-## Docker
-
-```bash
-docker build -t procurement-agent .
-docker run -p 8000:8000 procurement-agent
-```
-
-The API is exposed at `http://localhost:8000`.
+- **Frontend (Vercel):** Root directory `frontend`, build command `npm run build`, output directory `dist`. See `frontend/vercel.json`.
+- **Backend (Render/Railway):** Uses `Dockerfile.fastapi` or direct uvicorn process execution with `src.api.main:app`.
