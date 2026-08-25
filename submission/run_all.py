@@ -44,12 +44,18 @@ def run_all():
 
     # Start Frontend
     print("🔹 Starting Frontend (Vite)...")
-    frontend_cmd = ["npm.cmd", "run", "dev"] if sys.platform == "win32" else ["npm", "run", "dev"]
-    frontend_process = subprocess.Popen(
-        frontend_cmd,
-        cwd=frontend_dir,
-        shell=False
-    )
+    if sys.platform == "win32":
+        frontend_process = subprocess.Popen(
+            ["npm.cmd", "run", "dev"],
+            cwd=frontend_dir,
+            shell=False
+        )
+    else:
+        frontend_process = subprocess.Popen(
+            ["npm", "run", "dev"],
+            cwd=frontend_dir,
+            shell=False
+        )
 
     print("\n✅ System is running!")
     print("   - Backend: http://localhost:8000")
