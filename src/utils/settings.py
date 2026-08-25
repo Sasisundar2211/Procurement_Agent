@@ -23,9 +23,14 @@ class Settings:
     log_level: str
 
 
+DEFAULT_CORS_ORIGINS = (
+    "http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173"
+)
+
+
 @lru_cache
 def get_settings() -> Settings:
-    raw_origins = os.getenv("CORS_ORIGINS", "*")
+    raw_origins = os.getenv("CORS_ORIGINS", DEFAULT_CORS_ORIGINS)
     cors_origins = [origin.strip() for origin in raw_origins.split(",") if origin.strip()]
 
     return Settings(
@@ -38,6 +43,6 @@ def get_settings() -> Settings:
         ),
         default_drift_threshold_percent=float(os.getenv("DEFAULT_DRIFT_THRESHOLD_PERCENT", "5")),
         max_ai_summaries=int(os.getenv("MAX_AI_SUMMARIES", "5")),
-        cors_origins=cors_origins or ["*"],
+        cors_origins=cors_origins,
         log_level=os.getenv("LOG_LEVEL", "INFO"),
     )
