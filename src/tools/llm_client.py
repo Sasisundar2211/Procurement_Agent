@@ -4,6 +4,7 @@ import pathlib
 env_path = pathlib.Path(__file__).parent.parent.parent / '.env'
 load_dotenv(dotenv_path=env_path)
 
+import functools
 import os
 import requests
 import google.generativeai as genai
@@ -12,9 +13,10 @@ def get_llm_provider():
     provider = os.getenv("LLM_PROVIDER", "local")
     return provider
 
+@functools.lru_cache(maxsize=256)
 def summarize_drift_with_gemini(contract_price, po_price):
     """
-    Uses Gemini to summarize a price drift.
+    Uses Gemini to summarize a price drift. Cached to avoid redundant API calls.
     """
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:

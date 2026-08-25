@@ -30,7 +30,7 @@ def run_all():
     # Start Backend
     print("🔹 Starting Backend (FastAPI)...")
     backend_process = subprocess.Popen(
-        [sys.executable, "-m", "uvicorn", "src.api.fastapi_app:app", "--reload", "--port", "8000"],
+        [sys.executable, "-m", "uvicorn", "src.api.main:app", "--reload", "--port", "8000"],
         cwd=root_dir,
         shell=False
     )

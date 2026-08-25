@@ -26,10 +26,11 @@ import {
 import { cn } from '../lib/utils';
 import { ThemeToggle } from './ThemeToggle';
 import { PODetailModal, type DetectionResult } from './PODetailModal';
-import { VendorRanking } from './VendorRanking';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
 import ReactSlider from 'react-slider';
+
+const VendorRanking = React.lazy(() =>
+  import('./VendorRanking').then((m) => ({ default: m.VendorRanking }))
+);
 
 interface DashboardStats {
   totalDetections: number;
@@ -249,7 +250,10 @@ export default function Dashboard() {
     window.URL.revokeObjectURL(url);
   };
 
-  const handleDownloadPDF = () => {
+  const handleDownloadPDF = async () => {
+    const { default: jsPDF } = await import('jspdf');
+    const { default: autoTable } = await import('jspdf-autotable');
+
     const doc = new jsPDF();
     doc.text("Procurement Drift Report", 14, 22);
     doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 30);
@@ -332,7 +336,11 @@ export default function Dashboard() {
 
   const renderContent = () => {
     if (activeTab === 'vendor-ranking') {
-      return <VendorRanking />;
+      return (
+        <React.Suspense fallback={<div className="p-6 text-text-tertiary">Loading vendor evaluation...</div>}>
+          <VendorRanking />
+        </React.Suspense>
+      );
     }
 
     if (activeTab === 'settings') {

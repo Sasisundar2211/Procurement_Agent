@@ -14,7 +14,7 @@ This is a React + Tailwind CSS frontend for the Procurement Price-Drift Enforcem
 1.  Start the backend (from the project root):
 
     ```bash
-    uvicorn src.api.fastapi_app:app --reload --port 8000
+    uvicorn src.api.main:app --reload --port 8000
     ```
 
 2.  Start the frontend (from this directory):
