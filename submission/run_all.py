@@ -4,10 +4,16 @@ import sys
 import os
 import signal
 import shutil
-import psutil
+
+try:
+    import psutil
+except ImportError:
+    psutil = None
 
 def kill_process_on_port(port):
     """Kills the process listening on the specified port."""
+    if psutil is None:
+        return
     for proc in psutil.process_iter(['pid', 'name']):
         try:
             for conn in proc.net_connections(kind='inet'):
@@ -38,9 +44,11 @@ def run_all():
 
     # Start Frontend
     print("🔹 Starting Frontend (Vite)...")
-    npm_cmd = shutil.which("npm") or ("npm.cmd" if sys.platform == "win32" else "npm")
+    npm_executable = shutil.which("npm")
+    if npm_executable is None:
+        npm_executable = "npm.cmd" if sys.platform == "win32" else "npm"
     frontend_process = subprocess.Popen(
-        [npm_cmd, "run", "dev"],
+        [npm_executable, "run", "dev"],
         cwd=frontend_dir,
         shell=False
     )
