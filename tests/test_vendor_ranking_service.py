@@ -3,6 +3,7 @@ import pytest
 
 from src.services.vendor_ranking_service import (
     VendorRankingError,
+    _is_lower_better,
     parse_weight_spec,
     rank_vendors,
 )
@@ -40,3 +41,46 @@ def test_rank_vendors_requires_vendor_column():
     df = pd.DataFrame([{"supplier": "A", "unit_price": 100}])
     with pytest.raises(VendorRankingError):
         rank_vendors(df, vendor_column="vendor_id")
+
+
+@pytest.mark.parametrize(
+    "metric_name, expected",
+    [
+        # Lower-is-better keywords (exact match)
+        ("price", True),
+        ("cost", True),
+        ("risk", True),
+        ("delay", True),
+        ("late", True),
+        ("defect", True),
+        ("incident", True),
+        ("complaint", True),
+        # Case insensitivity & compounding
+        ("UNIT_PRICE", True),
+        ("Total_Cost", True),
+        ("Risk_Score", True),
+        ("DELAY_DAYS", True),
+        ("Late_Delivery_Count", True),
+        ("DefectRate", True),
+        ("INCIDENT_COUNT", True),
+        ("Customer_Complaints", True),
+        ("  price  ", True),
+        ("cost/unit", True),
+        ("risk-level", True),
+        # Higher-is-better metrics (should return False)
+        ("quality_score", False),
+        ("on_time_rate", False),
+        ("accuracy", False),
+        ("reliability", False),
+        ("speed", False),
+        ("uptime_percentage", False),
+        ("csat", False),
+        # Edge cases
+        ("", False),
+        ("   ", False),
+        ("12345", False),
+        ("---", False),
+    ],
+)
+def test_is_lower_better(metric_name: str, expected: bool):
+    assert _is_lower_better(metric_name) == expected

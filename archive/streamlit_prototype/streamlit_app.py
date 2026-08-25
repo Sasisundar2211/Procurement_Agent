@@ -16,7 +16,7 @@ load_dotenv(PROJECT_ROOT / ".env")
 
 from src.services.vendor_explanation_service import (  # noqa: E402
     VendorExplanationError,
-    generate_vendor_ranking_explanation,
+    generate_vendor_ranking_explanation_sync,
 )
 from src.services.vendor_ranking_service import (  # noqa: E402
     VendorRankingError,
@@ -112,7 +112,7 @@ if ranked_df is not None and isinstance(ranked_df, pd.DataFrame):
     if st.button("Generate Short Explanation"):
         try:
             with st.spinner("Generating explanation..."):
-                explanation = generate_vendor_ranking_explanation(
+                explanation = generate_vendor_ranking_explanation_sync(
                     ranked_df=ranked_df,
                     top_n=top_n,
                     model=model_override or None,

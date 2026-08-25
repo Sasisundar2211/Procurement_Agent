@@ -1,9 +1,11 @@
+import httpx
 import pandas as pd
 import pytest
 
 from src.services.vendor_explanation_service import (
     VendorExplanationError,
     generate_vendor_ranking_explanation,
+    generate_vendor_ranking_explanation_sync,
 )
 
 
@@ -14,13 +16,14 @@ class _DummyResponse:
 
     def raise_for_status(self):
         if self.status_code >= 400:
-            raise Exception(f"status={self.status_code}")
+            raise httpx.HTTPStatusError("API error", request=None, response=self)
 
     def json(self):
         return self._payload
 
 
-def test_generate_vendor_ranking_explanation_success(monkeypatch):
+@pytest.mark.asyncio
+async def test_generate_vendor_ranking_explanation_success(monkeypatch):
     ranked = pd.DataFrame(
         [
             {"vendor_id": "V001", "rank": 1, "weighted_score": 0.81},
@@ -32,8 +35,8 @@ def test_generate_vendor_ranking_explanation_success(monkeypatch):
 
     captured = {}
 
-    def fake_post(url, headers, json, timeout):
-        captured["url"] = url
+    async def fake_post(self, url, headers=None, json=None, timeout=None):
+        captured["url"] = str(url)
         captured["headers"] = headers
         captured["json"] = json
         captured["timeout"] = timeout
@@ -41,9 +44,9 @@ def test_generate_vendor_ranking_explanation_success(monkeypatch):
             payload={"choices": [{"message": {"content": "V001 leads clearly; maintain partnership and monitor trailing vendors."}}]}
         )
 
-    monkeypatch.setattr("src.services.vendor_explanation_service.requests.post", fake_post)
+    monkeypatch.setattr("httpx.AsyncClient.post", fake_post)
 
-    text = generate_vendor_ranking_explanation(ranked)
+    text = await generate_vendor_ranking_explanation(ranked)
 
     assert "V001" in text
     assert captured["url"].endswith("/chat/completions")
@@ -51,7 +54,29 @@ def test_generate_vendor_ranking_explanation_success(monkeypatch):
     assert captured["json"]["model"]
 
 
-def test_generate_vendor_ranking_explanation_requires_api_key(monkeypatch):
+def test_generate_vendor_ranking_explanation_sync_success(monkeypatch):
+    ranked = pd.DataFrame(
+        [
+            {"vendor_id": "V001", "rank": 1, "weighted_score": 0.81},
+            {"vendor_id": "V002", "rank": 2, "weighted_score": 0.58},
+        ]
+    )
+
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+
+    async def fake_post(self, url, headers=None, json=None, timeout=None):
+        return _DummyResponse(
+            payload={"choices": [{"message": {"content": "V001 leads clearly; maintain partnership and monitor trailing vendors."}}]}
+        )
+
+    monkeypatch.setattr("httpx.AsyncClient.post", fake_post)
+
+    text = generate_vendor_ranking_explanation_sync(ranked)
+    assert "V001" in text
+
+
+@pytest.mark.asyncio
+async def test_generate_vendor_ranking_explanation_requires_api_key(monkeypatch):
     ranked = pd.DataFrame([
         {"vendor_id": "V001", "rank": 1, "weighted_score": 0.81},
     ])
@@ -59,14 +84,15 @@ def test_generate_vendor_ranking_explanation_requires_api_key(monkeypatch):
     monkeypatch.delenv("LLM_API_KEY", raising=False)
 
     with pytest.raises(VendorExplanationError):
-        generate_vendor_ranking_explanation(ranked)
+        await generate_vendor_ranking_explanation(ranked)
 
 
-def test_generate_vendor_ranking_explanation_validates_columns(monkeypatch):
+@pytest.mark.asyncio
+async def test_generate_vendor_ranking_explanation_validates_columns(monkeypatch):
     monkeypatch.setenv("OPENAI_API_KEY", "test-key")
     ranked = pd.DataFrame([
         {"vendor_id": "V001", "weighted_score": 0.81},
     ])
 
     with pytest.raises(VendorExplanationError):
-        generate_vendor_ranking_explanation(ranked)
+        await generate_vendor_ranking_explanation(ranked)

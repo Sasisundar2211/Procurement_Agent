@@ -11,11 +11,5 @@ from src.utils.database import get_engine
 # Kept for compatibility with scripts/tests that monkeypatch this symbol.
 engine: Engine = get_engine()
 
-
 def detect_public_only(drift_threshold: float | None = None):
     return _detect_public_only(drift_threshold=drift_threshold, engine_override=engine)
-
-
-def evaluate_with_private_labels():
-    # Reserved for future extension.
-    return None

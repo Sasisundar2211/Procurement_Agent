@@ -1,48 +1,62 @@
-# Procurement Agent API (FastAPI)
+# Procurement Agent API (FastAPI) & Frontend
 
-Production-oriented procurement drift detection service built with FastAPI.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+Production-oriented procurement drift detection service built with FastAPI and React.
+
+> **Note:** Design notes, prompt libraries, and submission writeups live in `docs/internal/` for detailed documentation.
+
+## 📋 Quick Links
+
+- [Model Reproducibility Guide](MODEL_REPRODUCIBILITY.md) - Step-by-step instructions to reproduce results
+- [Submission Write-up](SUBMISSION_WRITEUP.md) - Detailed project documentation
+- [External Data Sources](EXTERNAL_DATA.md) - Data sources and licenses
+- [Submission Checklist](submission_checklist.md) - Competition compliance checklist
 
 ## Architecture
 
-The backend now follows a modular structure:
+The project is structured into a dedicated frontend and backend split:
 
+- `frontend/`: Vite + React UI (configured for Vercel deployment)
 - `src/api/`: FastAPI app, routers, and route handlers
-- `src/services/`: business logic (detection, simulation, ingestion, task orchestration)
+- `src/services/`: Business logic (detection, simulation, ingestion, task orchestration, vendor ranking)
 - `src/models/`: Pydantic API contracts and task store primitives
-- `src/utils/`: settings, database engine, logging, serialization helpers
-
-Legacy paths (`src/api/fastapi_app.py`, `src/agents/*`) are kept as compatibility wrappers.
+- `src/utils/`: Settings, database engine, logging, serialization helpers
+- `scripts/`: Production & development utility scripts (`scripts/data/`, `scripts/dev/`)
+- `docs/internal/`: Internal planning, compliance, and prompt documentation
 
 ## Quickstart
 
-1. Create a virtual environment and install dependencies:
+### 1. Backend Setup
+
+Create a virtual environment and install dependencies:
 
 ```bash
 python3.11 -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
+pip install -r requirements.txt -r requirements-dev.txt
 ```
 
-2. Configure environment variables:
+Configure environment variables:
 
 ```bash
 cp .env.example .env
 ```
 
-3. Generate and ingest demo data:
+Generate and ingest demo data:
 
 ```bash
-python data_generator.py
+python scripts/data/data_generator.py
 python -c "from src.agents.ingestor import run; run()"
 ```
 
-4. Start the API:
+Start the API backend:
 
 ```bash
 uvicorn src.api.main:app --reload --port 8000
 ```
 
-5. (Optional) Start the frontend:
+### 2. Frontend Setup
 
 ```bash
 cd frontend
@@ -50,15 +64,36 @@ npm install
 npm run dev
 ```
 
+## 🚀 Model Training & Inference
+
+### Train the Model
+
+```bash
+# Generate data
+python data_generator.py
+
+# Train (dry run to verify setup)
+python train.py --dry-run
+
+# Full training
+python train.py --data-path data/public --output-dir models --seed 42
+```
+
+### Run Inference
+
+```bash
+python inference.py --model-path models/<model_folder> --data-path data/public --print-samples
+```
+
 ## API Endpoints
 
-- `GET /api/health`: health/version check
-- `GET /api/leaks`: current drift detections
-- `POST /api/run-detection`: start async detection task
-- `GET /api/run-detection/{task_id}`: poll task status
-- `POST /api/simulate-traffic`: append synthetic traffic for demos
-- `POST /api/vendors/rank`: upload CSV and return weighted vendor ranking
-- `POST /api/vendors/explain-ranking`: upload ranked CSV and get short OpenAI business summary
+- `GET /api/health`: Health/version check
+- `GET /api/leaks`: Current drift detections
+- `POST /api/run-detection`: Start async detection task
+- `GET /api/run-detection/{task_id}`: Poll task status
+- `POST /api/simulate-traffic`: Append synthetic traffic for demos
+- `POST /api/vendors/rank`: Upload CSV and return weighted vendor ranking
+- `POST /api/vendors/explain-ranking`: Upload ranked CSV and get AI business summary
 
 ## Vendor Ranking (CSV -> Ranked Vendors)
 
@@ -70,13 +105,7 @@ CLI usage:
 python scripts/rank_vendors.py input.csv -o ranked_vendors.csv --weights "unit_price:-0.5,on_time_rate:0.3,quality_score:0.2"
 ```
 
-Notes:
-
-- `vendor_id` is used by default as the vendor key (`--vendor-column` to change).
-- Positive weight means higher metric is better.
-- Negative weight means lower metric is better (for example cost/price/risk metrics).
-
-## Vendor Ranking Explanation (OpenAI)
+## Vendor Ranking Explanation (OpenAI/LLM)
 
 Generate a short, business-focused summary from ranked vendor results:
 
@@ -84,30 +113,24 @@ Generate a short, business-focused summary from ranked vendor results:
 python scripts/explain_vendor_ranking.py ranked_vendors.csv --top-n 3
 ```
 
-Required environment variable:
+## Legacy Prototype UI
 
-- `OPENAI_API_KEY`
+The legacy Streamlit prototype is archived under `archive/streamlit_prototype/streamlit_app.py`.
 
-## Streamlit App
+## Deployment
 
-Run an interactive app to upload CSV, rank vendors, and generate a short explanation:
+- **Frontend (Vercel):** Root directory `frontend`, build command `npm run build`, output directory `dist`. See `frontend/vercel.json`.
+- **Backend (Render/Railway/Cloud Run):** Uses `Dockerfile.fastapi` or direct uvicorn process execution with `src.api.main:app`.
 
-```bash
-streamlit run streamlit_app.py
-```
+### GitHub Container Registry
 
-In the app:
+The application is automatically built and published to GitHub Container Registry on every push to the `main` branch.
 
-- Upload vendor metrics CSV
-- Set optional weights and vendor column
-- View ranked vendors and download ranked output CSV
-- Generate a short business-focused explanation with OpenAI
-
-## Docker
+**Pull and run the latest image:**
 
 ```bash
-docker build -t procurement-agent .
-docker run -p 8000:8000 procurement-agent
+docker pull ghcr.io/sasisundar2211/procurement_agent-:latest
+docker run -p 8000:8000 ghcr.io/sasisundar2211/procurement_agent-:latest
 ```
 
-The API is exposed at `http://localhost:8000`.
+Open your browser and navigate to `http://localhost:8000` to use the application.
