@@ -1,37 +1,53 @@
 document.getElementById('run-leaks').addEventListener('click', () => {
     const resultsContainer = document.getElementById('results-container');
-    resultsContainer.innerHTML = '<p>Fetching leaks...</p>';
+    resultsContainer.textContent = '';
+    const loadingMsg = document.createElement('p');
+    loadingMsg.textContent = 'Fetching leaks...';
+    resultsContainer.appendChild(loadingMsg);
 
     fetch('/api/leaks')
         .then(response => response.json())
         .then(data => {
-            if (data.length === 0) {
-                resultsContainer.innerHTML = '<p>No leaks detected.</p>';
+            if (!data || data.length === 0) {
+                resultsContainer.textContent = '';
+                const noLeaksMsg = document.createElement('p');
+                noLeaksMsg.textContent = 'No leaks detected.';
+                resultsContainer.appendChild(noLeaksMsg);
                 return;
             }
 
-            let table = '<table id="results">';
-            // Create headers from the keys of the first object
-            table += '<thead><tr>';
+            const table = document.createElement('table');
+            table.id = 'results';
+
+            const thead = document.createElement('thead');
+            const trHead = document.createElement('tr');
             Object.keys(data[0]).forEach(key => {
-                table += `<th>${key}</th>`;
+                const th = document.createElement('th');
+                th.textContent = key;
+                trHead.appendChild(th);
             });
-            table += '</tr></thead>';
-            
-            // Create rows
-            table += '<tbody>';
+            thead.appendChild(trHead);
+            table.appendChild(thead);
+
+            const tbody = document.createElement('tbody');
             data.forEach(row => {
-                table += '<tr>';
+                const tr = document.createElement('tr');
                 Object.values(row).forEach(value => {
-                    table += `<td>${value}</td>`;
+                    const td = document.createElement('td');
+                    td.textContent = value !== null && value !== undefined ? String(value) : '';
+                    tr.appendChild(td);
                 });
-                table += '</tr>';
+                tbody.appendChild(tr);
             });
-            table += '</tbody></table>';
-            
-            resultsContainer.innerHTML = table;
+            table.appendChild(tbody);
+
+            resultsContainer.textContent = '';
+            resultsContainer.appendChild(table);
         })
         .catch(error => {
-            resultsContainer.innerHTML = `<p>Error: ${error}</p>`;
+            resultsContainer.textContent = '';
+            const fetchErrorMsg = document.createElement('p');
+            fetchErrorMsg.textContent = `Error: ${error}`;
+            resultsContainer.appendChild(fetchErrorMsg);
         });
 });
