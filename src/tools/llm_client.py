@@ -5,7 +5,6 @@ env_path = pathlib.Path(__file__).parent.parent.parent / '.env'
 load_dotenv(dotenv_path=env_path)
 
 import os
-import requests
 import google.generativeai as genai
 
 def get_llm_provider():
