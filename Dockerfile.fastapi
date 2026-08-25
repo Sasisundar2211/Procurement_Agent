@@ -1,3 +1,4 @@
+# Standalone backend container build for Render/Railway API deployment
 FROM python:3.11-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \

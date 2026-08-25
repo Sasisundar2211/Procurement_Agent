@@ -1,3 +1,4 @@
+# Full-stack monolithic container build (bundles built Vite React frontend with FastAPI backend static serving)
 # Stage 1: Build the frontend
 FROM node:18-slim AS frontend-builder
 WORKDIR /app/frontend
