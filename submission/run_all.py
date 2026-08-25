@@ -2,11 +2,16 @@ import subprocess
 import time
 import sys
 import os
-import signal
-import psutil
+
+try:
+    import psutil
+except ImportError:
+    psutil = None
 
 def kill_process_on_port(port):
     """Kills the process listening on the specified port."""
+    if psutil is None:
+        return
     for proc in psutil.process_iter(['pid', 'name']):
         try:
             for conn in proc.net_connections(kind='inet'):
@@ -37,12 +42,18 @@ def run_all():
 
     # Start Frontend
     print("🔹 Starting Frontend (Vite)...")
-    # Use shell=True for npm on Windows to resolve the command correctly
-    frontend_process = subprocess.Popen(
-        ["npm", "run", "dev"],
-        cwd=frontend_dir,
-        shell=True
-    )
+    if sys.platform == "win32":
+        frontend_process = subprocess.Popen(
+            ["npm.cmd", "run", "dev"],
+            cwd=frontend_dir,
+            shell=False
+        )
+    else:
+        frontend_process = subprocess.Popen(
+            ["npm", "run", "dev"],
+            cwd=frontend_dir,
+            shell=False
+        )
 
     print("\n✅ System is running!")
     print("   - Backend: http://localhost:8000")
@@ -66,14 +77,10 @@ def run_all():
         if backend_process.poll() is None:
             backend_process.terminate()
         
-        # For shell=True on Windows, terminate might not kill the child process tree effectively without extra logic,
-        # but for simple dev usage, this is usually "good enough" or requires taskkill.
         if sys.platform == "win32":
-             # Try to kill backend if it's still running
              if backend_process.poll() is None:
                 subprocess.call(['taskkill', '/F', '/T', '/PID', str(backend_process.pid)])
              
-             # Try to kill frontend tree
              subprocess.call(['taskkill', '/F', '/T', '/PID', str(frontend_process.pid)])
         else:
             if frontend_process.poll() is None:

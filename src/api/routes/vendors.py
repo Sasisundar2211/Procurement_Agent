@@ -65,7 +65,7 @@ async def explain_vendor_ranking(
         raise HTTPException(status_code=400, detail="Uploaded CSV is empty")
 
     try:
-        explanation = explain_ranked_vendors_from_csv(
+        explanation = await explain_ranked_vendors_from_csv(
             csv_bytes=payload,
             top_n=top_n,
             model=model,

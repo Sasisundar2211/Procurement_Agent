@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
   LayoutDashboard, 
@@ -129,29 +130,34 @@ export default function Dashboard() {
   }, []);
 
   useEffect(() => {
-    let isMounted = true;
-    const loadInitialData = async () => {
-      try {
-        const response = await fetch('/api/leaks');
-        if (response.ok && isMounted) {
-          const data = await response.json();
-          setResults(data);
-          calculateStats(data);
-        }
-      } catch (error) {
-        console.error("Failed to fetch results", error);
-      }
-    };
-    loadInitialData();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+    fetchResults();
+  }, [fetchResults]);
 
   const handleApplyFilters = () => {
     fetchResults(driftScoreRange[0]);
     setShowFilters(false);
   };
+
+  const pollStatus = useCallback(async (taskId: string) => {
+    const interval = setInterval(async () => {
+      try {
+        const response = await fetch(`/api/run-detection/${taskId}`);
+        const data = await response.json();
+        if (data.status === 'completed') {
+          clearInterval(interval);
+          fetchResults(); // Refresh data
+          setIsDetecting(false);
+          showToast("Detection run completed! Fresh leaks loaded.");
+        } else if (data.status === 'failed') {
+          clearInterval(interval);
+          setIsDetecting(false);
+        }
+      } catch {
+        clearInterval(interval);
+        setIsDetecting(false);
+      }
+    }, 1000);
+  }, [fetchResults]);
 
   const runDetection = async () => {
     setIsDetecting(true);
@@ -186,27 +192,6 @@ export default function Dashboard() {
       console.error("Failed to simulate traffic", error);
       setIsSimulating(false);
     }
-  };
-
-  const pollStatus = async (taskId: string) => {
-    const interval = setInterval(async () => {
-      try {
-        const response = await fetch(`/api/run-detection/${taskId}`);
-        const data = await response.json();
-        if (data.status === 'completed') {
-          clearInterval(interval);
-          fetchResults();
-          setIsDetecting(false);
-          showToast("Detection run completed! Fresh leaks loaded.");
-        } else if (data.status === 'failed') {
-          clearInterval(interval);
-          setIsDetecting(false);
-        }
-      } catch {
-        clearInterval(interval);
-        setIsDetecting(false);
-      }
-    }, 1000);
   };
 
   const handleSort = (key: keyof DetectionResult) => {
@@ -501,7 +486,7 @@ export default function Dashboard() {
                         ariaLabel={['Lower thumb', 'Upper thumb']}
                         ariaValuetext={state => `Thumb value ${state.valueNow}`}
                         renderThumb={(props, state) => (
-                          <div {...props}>
+                          <div {...props} key={props.key}>
                             <div className="text-xs text-white absolute -top-5 left-1/2 -translate-x-1/2">
                               {state.valueNow}
                             </div>

@@ -3,8 +3,8 @@ from __future__ import annotations
 import os
 from io import BytesIO
 
+import httpx
 import pandas as pd
-import requests
 
 DEFAULT_MODEL = "gpt-4o-mini"
 DEFAULT_TOP_N = 3
@@ -66,11 +66,12 @@ def _build_business_context(ranked_df: pd.DataFrame, top_n: int) -> str:
     )
 
 
-def generate_vendor_ranking_explanation(
+async def generate_vendor_ranking_explanation(
     ranked_df: pd.DataFrame,
     top_n: int = DEFAULT_TOP_N,
     model: str | None = None,
     timeout_seconds: int = 30,
+    client: httpx.AsyncClient | None = None,
 ) -> str:
     if top_n < 1:
         raise VendorExplanationError("top_n must be >= 1")
@@ -104,19 +105,28 @@ def generate_vendor_ranking_explanation(
         ],
     }
 
-    response = requests.post(
-        OPENAI_CHAT_COMPLETIONS_URL,
-        headers={
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-        },
-        json=payload,
-        timeout=timeout_seconds,
-    )
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+    }
 
     try:
+        if client is not None:
+            response = await client.post(
+                OPENAI_CHAT_COMPLETIONS_URL,
+                headers=headers,
+                json=payload,
+                timeout=timeout_seconds,
+            )
+        else:
+            async with httpx.AsyncClient(timeout=timeout_seconds) as async_client:
+                response = await async_client.post(
+                    OPENAI_CHAT_COMPLETIONS_URL,
+                    headers=headers,
+                    json=payload,
+                )
         response.raise_for_status()
-    except requests.RequestException as exc:
+    except httpx.HTTPError as exc:
         raise VendorExplanationError(f"OpenAI API request failed: {exc}") from exc
 
     data = response.json()
@@ -132,11 +142,12 @@ def generate_vendor_ranking_explanation(
     return " ".join(content.split())
 
 
-def explain_ranked_vendors_from_csv(
+async def explain_ranked_vendors_from_csv(
     csv_bytes: bytes | None = None,
     csv_path: str | None = None,
     top_n: int = DEFAULT_TOP_N,
     model: str | None = None,
+    client: httpx.AsyncClient | None = None,
 ) -> str:
     if csv_bytes is None and not csv_path:
         raise VendorExplanationError("Provide either csv_bytes or csv_path")
@@ -146,8 +157,43 @@ def explain_ranked_vendors_from_csv(
     else:
         ranked_df = pd.read_csv(csv_path)
 
-    return generate_vendor_ranking_explanation(
+    return await generate_vendor_ranking_explanation(
         ranked_df=ranked_df,
         top_n=top_n,
         model=model,
+        client=client,
+    )
+
+
+def generate_vendor_ranking_explanation_sync(
+    ranked_df: pd.DataFrame,
+    top_n: int = DEFAULT_TOP_N,
+    model: str | None = None,
+    timeout_seconds: int = 30,
+) -> str:
+    import asyncio
+    return asyncio.run(
+        generate_vendor_ranking_explanation(
+            ranked_df=ranked_df,
+            top_n=top_n,
+            model=model,
+            timeout_seconds=timeout_seconds,
+        )
+    )
+
+
+def explain_ranked_vendors_from_csv_sync(
+    csv_bytes: bytes | None = None,
+    csv_path: str | None = None,
+    top_n: int = DEFAULT_TOP_N,
+    model: str | None = None,
+) -> str:
+    import asyncio
+    return asyncio.run(
+        explain_ranked_vendors_from_csv(
+            csv_bytes=csv_bytes,
+            csv_path=csv_path,
+            top_n=top_n,
+            model=model,
+        )
     )
