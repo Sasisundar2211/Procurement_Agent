@@ -44,11 +44,9 @@ def run_all():
 
     # Start Frontend
     print("🔹 Starting Frontend (Vite)...")
-    npm_executable = shutil.which("npm")
-    if npm_executable is None:
-        npm_executable = "npm.cmd" if sys.platform == "win32" else "npm"
+    frontend_cmd = ["npm.cmd", "run", "dev"] if sys.platform == "win32" else ["npm", "run", "dev"]
     frontend_process = subprocess.Popen(
-        [npm_executable, "run", "dev"],
+        frontend_cmd,
         cwd=frontend_dir,
         shell=False
     )
