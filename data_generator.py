@@ -1,7 +1,10 @@
 # data_generator.py
+import datetime
 import os
-import pandas as pd, numpy as np, random, datetime, json
 from pathlib import Path
+import random
+
+import pandas as pd
 OUT = Path("/tmp/procureguard-data") if os.getenv("VERCEL") else Path("data")
 PRIVATE = OUT/"private"
 PUBLIC = OUT/"public"
