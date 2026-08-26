@@ -1,12 +1,18 @@
 document.getElementById('run-detection').addEventListener('click', () => {
     const resultsContainer = document.getElementById('results-container');
-    resultsContainer.innerHTML = '<p>Detection task started...</p>';
+    resultsContainer.textContent = '';
+    const loadingP = document.createElement('p');
+    loadingP.textContent = 'Detection task started...';
+    resultsContainer.appendChild(loadingP);
 
     fetch('/api/run-detection', { method: 'POST' })
         .then(response => response.json())
         .then(data => {
             const taskId = data.task_id;
-            resultsContainer.innerHTML = `<p>Task ${taskId} is in progress. Polling for results...</p>`;
+            resultsContainer.textContent = '';
+            const inProgressP = document.createElement('p');
+            inProgressP.textContent = `Task ${taskId} is in progress. Polling for results...`;
+            resultsContainer.appendChild(inProgressP);
             
             const interval = setInterval(() => {
                 fetch(`/api/run-detection/${taskId}`)
@@ -14,38 +20,55 @@ document.getElementById('run-detection').addEventListener('click', () => {
                     .then(task => {
                         if (task.status === 'completed') {
                             clearInterval(interval);
+                            resultsContainer.textContent = '';
                             const results = task.result;
-                            if (results.length === 0) {
-                                resultsContainer.innerHTML = '<p>No price drifts detected.</p>';
+                            if (!Array.isArray(results) || results.length === 0) {
+                                const noDriftsP = document.createElement('p');
+                                noDriftsP.textContent = 'No price drifts detected.';
+                                resultsContainer.appendChild(noDriftsP);
                                 return;
                             }
                             
-                            let table = '<table id="results">';
-                            table += '<thead><tr>';
+                            const table = document.createElement('table');
+                            table.id = 'results';
+
+                            const thead = document.createElement('thead');
+                            const headerRow = document.createElement('tr');
                             Object.keys(results[0]).forEach(key => {
-                                table += `<th>${key}</th>`;
+                                const th = document.createElement('th');
+                                th.textContent = key;
+                                headerRow.appendChild(th);
                             });
-                            table += '</tr></thead>';
-                            
-                            table += '<tbody>';
+                            thead.appendChild(headerRow);
+                            table.appendChild(thead);
+
+                            const tbody = document.createElement('tbody');
                             results.forEach(row => {
-                                table += '<tr>';
+                                const tr = document.createElement('tr');
                                 Object.values(row).forEach(value => {
-                                    table += `<td>${value}</td>`;
+                                    const td = document.createElement('td');
+                                    td.textContent = value !== null && value !== undefined ? String(value) : '';
+                                    tr.appendChild(td);
                                 });
-                                table += '</tr>';
+                                tbody.appendChild(tr);
                             });
-                            table += '</tbody></table>';
+                            table.appendChild(tbody);
                             
-                            resultsContainer.innerHTML = table;
+                            resultsContainer.appendChild(table);
                         } else if (task.status === 'failed') {
                             clearInterval(interval);
-                            resultsContainer.innerHTML = `<p>Error: ${task.error}</p>`;
+                            resultsContainer.textContent = '';
+                            const errorP = document.createElement('p');
+                            errorP.textContent = `Error: ${task.error}`;
+                            resultsContainer.appendChild(errorP);
                         }
                     });
             }, 2000);
         })
         .catch(error => {
-            resultsContainer.innerHTML = `<p>Error: ${error}</p>`;
+            resultsContainer.textContent = '';
+            const errorP = document.createElement('p');
+            errorP.textContent = `Error: ${error}`;
+            resultsContainer.appendChild(errorP);
         });
 });
