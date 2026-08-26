@@ -1,7 +1,6 @@
 import pandas as pd
 import numpy as np
 from src.agents.price_detector import engine
-import uuid
 import os
 
 def ingest_sf_data():
