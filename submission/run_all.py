@@ -2,7 +2,6 @@ import subprocess
 import time
 import sys
 import os
-import signal
 import psutil
 
 def kill_process_on_port(port):
