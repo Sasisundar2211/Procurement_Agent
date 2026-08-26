@@ -11,7 +11,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from src.services.vendor_explanation_service import (
     VendorExplanationError,
-    explain_ranked_vendors_from_csv,
+    explain_ranked_vendors_from_csv_sync,
 )
 
 
@@ -29,7 +29,7 @@ def main() -> int:
     args = parse_args()
 
     try:
-        explanation = explain_ranked_vendors_from_csv(
+        explanation = explain_ranked_vendors_from_csv_sync(
             csv_path=args.ranked_csv,
             top_n=args.top_n,
             model=args.model,
