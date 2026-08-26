@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
 import pandas as pd
@@ -50,12 +51,27 @@ def _build_summary(drifts: pd.DataFrame) -> pd.DataFrame:
     drifts["gemini_summary"] = None
 
     max_summaries = min(settings.max_ai_summaries, len(drifts))
-    for idx in drifts.index[:max_summaries]:
-        row = drifts.loc[idx]
-        drifts.at[idx, "gemini_summary"] = summarize_drift_with_gemini(
-            row["contract_unit_price"],
-            row["unit_price"],
-        )
+    target_indices = drifts.index[:max_summaries]
+
+    if max_summaries > 0:
+        tasks = [
+            (
+                idx,
+                drifts.loc[idx, "contract_unit_price"],
+                drifts.loc[idx, "unit_price"],
+            )
+            for idx in target_indices
+        ]
+
+        def _fetch_summary(args: tuple[Any, Any, Any]) -> tuple[Any, str]:
+            idx, contract_price, unit_price = args
+            summary = summarize_drift_with_gemini(contract_price, unit_price)
+            return idx, summary
+
+        with ThreadPoolExecutor(max_workers=max_summaries) as executor:
+            results = executor.map(_fetch_summary, tasks)
+            for idx, summary in results:
+                drifts.at[idx, "gemini_summary"] = summary
 
     drifts["gemini_summary"] = drifts["gemini_summary"].fillna(
         "Drift detected (AI summary skipped for speed)"
